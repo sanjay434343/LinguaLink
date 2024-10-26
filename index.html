@@ -179,18 +179,30 @@
         const targetLang = document.getElementById("targetLang");
         const listeningDiv = document.getElementById("listening");
         const translatingDiv = document.getElementById("translating");
-
+        
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = true;
         recognition.continuous = false;
-
+        
+        // Request microphone permission
+        async function requestMicrophonePermission() {
+            try {
+                // Try to get microphone access
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log("Microphone access granted.");
+            } catch (error) {
+                console.error("Microphone access denied:", error);
+                alert("Please allow microphone access to use this feature.");
+            }
+        }
+        
         recognition.onstart = () => {
             gsap.to(listeningDiv, { display: "block", opacity: 1, duration: 0.5 });
             startBtn.style.display = "none";
             stopBtn.style.display = "inline-block";
-            typingAnimation();  // Start typing animation
+            typingAnimation(); // Start typing animation
         };
-
+        
         recognition.onend = () => {
             gsap.to(listeningDiv, { opacity: 0, duration: 0.5, onComplete: () => {
                 listeningDiv.style.display = "none";
@@ -198,14 +210,14 @@
                 stopBtn.style.display = "none";
             }});
         };
-
+        
         recognition.onresult = async (event) => {
             const transcript = Array.from(event.results)
                 .map(result => result[0].transcript)
                 .join('');
             spokenTextDiv.innerText = transcript;
             gsap.to(spokenTextDiv, { opacity: 1, duration: 0.5 });
-
+        
             if (event.results[0].isFinal) {
                 stopTypingAnimation(); // Stop typing animation
                 const translatedText = await translateText(transcript, sourceLang.value, targetLang.value);
@@ -216,17 +228,20 @@
                 translatingAnimation(); // Start translating animation
             }
         };
-
-        startBtn.addEventListener("click", () => recognition.start());
+        
+        startBtn.addEventListener("click", async () => {
+            await requestMicrophonePermission(); // Request microphone permission before starting
+            recognition.start();
+        });
         stopBtn.addEventListener("click", () => recognition.stop());
         repeatBtn.addEventListener("click", () => speakTranslation(translationDiv.innerText));
-
+        
         function speakTranslation(text) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = targetLang.value;
             speechSynthesis.speak(utterance);
         }
-
+        
         async function translateText(text, source, target) {
             translatingDiv.style.display = "block"; // Show translating text
             gsap.to(translatingDiv, { opacity: 1, duration: 0.5 }); // Fade in the translating text
@@ -244,22 +259,23 @@
                 }});
             }
         }
-
+        
         // Typing animation for the "From" box
         function typingAnimation() {
             spokenTextDiv.innerText = "Typing...";
             gsap.to(spokenTextDiv, { opacity: 1, duration: 0.5 });
         }
-
+        
         function stopTypingAnimation() {
             gsap.killTweensOf(spokenTextDiv);
             spokenTextDiv.innerText = "";
         }
-
+        
         // Translating animation
         function translatingAnimation() {
             gsap.to(translatingDiv, { scale: 1.1, duration: 0.5, yoyo: true, repeat: 1 });
         }
+        
     </script>
 </body>
 </html>
