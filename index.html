@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>Enhanced Speech Translator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4e54c8, #8f94fb);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+        .container {
+            width: 100%;
+            margin: 5px;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            margin-top: -60px;
+        }
+        .sub-container {
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            text-align: center;
+            color: #333;
+            position: relative;
+        }
+        .dropdown-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-size: 1em;
+            color: #4e54c8;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            margin-top: 8px;
+            background-color: #f1f1f1;
+            border: none;
+        }
+        .text-display {
+            margin-top: 10px;
+            font-size: 1em;
+            min-height:170px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            text-align: left;
+            overflow: hidden;
+        }
+        .control-buttons {
+            
+            position: absolute;
+            bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        button {
+            position: absolute;
+            bottom: -25px;
+            padding: 10px 10px;
+            font-size: 30px;
+            border-radius: 50px;
+            border: none;
+            color: #4800ff;
+         background-color: #00000000;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #6b6ee6; }
+        .listening {
+            color: #000000;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        .translating {
+            font-size: 1.2em;
+            color: #000000;
+            margin-top: 10px;
+        }
+
+        #repeatBtn{
+            position: absolute;
+            bottom: 87%;
+            right: 6px;
+            color: rgb(53, 103, 255);
+            font-size: 16px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- "From" container with dropdown and input display -->
+        <div class="sub-container">
+            <label for="sourceLang">From</label>
+            <div class="dropdown-group">
+                <select id="sourceLang">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ta">Tamil</option>
+                    <option value="zh-CN">Chinese (Simplified)</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="ar">Arabic</option>
+                    <option value="ru">Russian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="bn">Bengali</option>
+                    <option value="ur">Urdu</option>
+                    <option value="tr">Turkish</option>
+                </select>
+            </div>
+            <div id="spokenText" class="text-display">Speak to translate...</div>
+            <div id="listening" class="listening" style="display: none;">Listening...</div>
+        </div>
+
+        <!-- "To" container with dropdown and output display -->
+        <div class="sub-container">
+            <label for="targetLang">To</label>
+            <div class="dropdown-group">
+                <select id="targetLang">
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ta">Tamil</option>
+                    <option value="zh-CN">Chinese (Simplified)</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="ar">Arabic</option>
+                    <option value="ru">Russian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="bn">Bengali</option>
+                    <option value="ur">Urdu</option>
+                    <option value="tr">Turkish</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div id="translation" class="text-display">Translation will appear here</div>
+            <div id="translating" class="translating" style="display: none;">Translating...</div>
+        <button id="repeatBtn" style="display: none;"><i class="fa-solid fa-repeat"></i></button>
+
+        </div>
+    </div>
+    
+    <div class="control-buttons">
+        <button id="startBtn"><i class="fa-solid fa-globe"></i></button>
+        <button id="stopBtn" style="display: none;"><i class="fa-solid fa-stop"></i></button>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const repeatBtn = document.getElementById("repeatBtn");
+        const spokenTextDiv = document.getElementById("spokenText");
+        const translationDiv = document.getElementById("translation");
+        const sourceLang = document.getElementById("sourceLang");
+        const targetLang = document.getElementById("targetLang");
+        const listeningDiv = document.getElementById("listening");
+        const translatingDiv = document.getElementById("translating");
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.interimResults = true;
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            gsap.to(listeningDiv, { display: "block", opacity: 1, duration: 0.5 });
+            startBtn.style.display = "none";
+            stopBtn.style.display = "inline-block";
+            typingAnimation();  // Start typing animation
+        };
+
+        recognition.onend = () => {
+            gsap.to(listeningDiv, { opacity: 0, duration: 0.5, onComplete: () => {
+                listeningDiv.style.display = "none";
+                startBtn.style.display = "inline-block";
+                stopBtn.style.display = "none";
+            }});
+        };
+
+        recognition.onresult = async (event) => {
+            const transcript = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join('');
+            spokenTextDiv.innerText = transcript;
+            gsap.to(spokenTextDiv, { opacity: 1, duration: 0.5 });
+
+            if (event.results[0].isFinal) {
+                stopTypingAnimation(); // Stop typing animation
+                const translatedText = await translateText(transcript, sourceLang.value, targetLang.value);
+                translationDiv.innerText = translatedText;
+                repeatBtn.style.display = "inline-block";
+                gsap.fromTo(translationDiv, { opacity: 0 }, { opacity: 1, duration: 1 });
+                speakTranslation(translatedText);
+                translatingAnimation(); // Start translating animation
+            }
+        };
+
+        startBtn.addEventListener("click", () => recognition.start());
+        stopBtn.addEventListener("click", () => recognition.stop());
+        repeatBtn.addEventListener("click", () => speakTranslation(translationDiv.innerText));
+
+        function speakTranslation(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = targetLang.value;
+            speechSynthesis.speak(utterance);
+        }
+
+        async function translateText(text, source, target) {
+            translatingDiv.style.display = "block"; // Show translating text
+            gsap.to(translatingDiv, { opacity: 1, duration: 0.5 }); // Fade in the translating text
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
+                if (!response.ok) throw new Error('Translation error');
+                const data = await response.json();
+                return data.responseData.translatedText;
+            } catch (error) {
+                console.error(error);
+                return "Translation failed";
+            } finally {
+                gsap.to(translatingDiv, { opacity: 0, duration: 0.5, delay: 2, onComplete: () => {
+                    translatingDiv.style.display = "none"; // Hide after delay
+                }});
+            }
+        }
+
+        // Typing animation for the "From" box
+        function typingAnimation() {
+            spokenTextDiv.innerText = "Typing...";
+            gsap.to(spokenTextDiv, { opacity: 1, duration: 0.5 });
+        }
+
+        function stopTypingAnimation() {
+            gsap.killTweensOf(spokenTextDiv);
+            spokenTextDiv.innerText = "";
+        }
+
+        // Translating animation
+        function translatingAnimation() {
+            gsap.to(translatingDiv, { scale: 1.1, duration: 0.5, yoyo: true, repeat: 1 });
+        }
+    </script>
+</body>
+</html>
